@@ -5,23 +5,20 @@ const dbClient = require('../utils/db');
 
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 
-const FilesController = {
+class FilesController {
   async postUpload (req, res) {
     const { name, type, parentId = 0, isPublic = false, data } = req.body;
     const { token } = req.headers;
 
-    // Verify token
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized - Token missing' });
     }
 
-    // Retrieve user from Redis using token
     const userId = await redisClient.get(`auth_${token}`);
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized - Invalid token' });
     }
 
-    // Validate required fields
     if (!name) {
       return res.status(400).json({ error: 'Missing name' });
     }
@@ -32,7 +29,6 @@ const FilesController = {
       return res.status(400).json({ error: 'Missing data' });
     }
 
-    // Check parentId validity
     if (parentId !== 0) {
       const parentFile = await dbClient.db
         .collection('files')
@@ -49,20 +45,16 @@ const FilesController = {
       let localPath = '';
 
       if (type !== 'folder') {
-        // Decode Base64 data and save locally
         const fileData = Buffer.from(data, 'base64');
         const fileExtension = path.extname(name);
         const fileName = uuidv4() + fileExtension;
         localPath = path.join(FOLDER_PATH, fileName);
 
-        // Ensure directory exists
         await fs.promises.mkdir(FOLDER_PATH, { recursive: true });
 
-        // Write file to local storage
         await fs.promises.writeFile(localPath, fileData);
       }
 
-      // Save file details to MongoDB
       const newFile = {
         userId,
         name,
@@ -82,6 +74,54 @@ const FilesController = {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
-};
 
-module.exports = FilesController;
+  async getShow (req, res) {
+    const { token } = req.headers;
+    const { id } = req.params;
+
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized - Token missing' });
+    }
+
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    const file = await dbClient.db
+      .collection('files')
+      .findOne({ _id: id, userId });
+    if (!file) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    return res.json(file);
+  }
+
+  async getIndex (req, res) {
+    const { token } = req.headers;
+    const { parentId = 0, page = 0 } = req.query;
+
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized - Token missing' });
+    }
+
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    const files = await dbClient.db
+      .collection('files')
+      .aggregate([
+        { $match: { userId, parentId } },
+        { $skip: page * 20 },
+        { $limit: 20 }
+      ])
+      .toArray();
+
+    return res.json(files);
+  }
+}
+
+module.exports = new FilesController();
