@@ -1,52 +1,40 @@
-const crypto = require('crypto');
 const dbClient = require('../utils/db');
+const redisClient = require('../utils/redis');
 
-const UsersController = {
-  async postNew(req, res) {
-    const { email, password } = req.body;
+const UserController = {
+  async getMe(req, res) {
+    const token = req.headers['x-token'];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     try {
-      // Check if email and password are provided
-      if (!email) {
-        return res.status(400).json({ error: 'Missing email' });
-      }
-      if (!password) {
-        return res.status(400).json({ error: 'Missing password' });
+      const key = `auth_${token}`;
+      const userId = await redisClient.get(key);
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Check if email already exists in DB
-      const existingUser = await dbClient.db
+      // Retrieve user from MongoDB
+      const user = await dbClient.db
         .collection('users')
-        .findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ error: 'Already exists' });
+        .findOne({ _id: userId });
+
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Hash the password using crypto module (SHA-256)
-      const hashedPassword = crypto
-        .createHash('sha256')
-        .update(password)
-        .digest('hex');
-
-      // Create the new user object
-      const newUser = {
-        email,
-        password: hashedPassword, // Store hashed password
-      };
-
-      // Save the new user in the database
-      const result = await dbClient.db.collection('users').insertOne(newUser);
-
-      // Return the newly created user
-      res.status(201).json({
-        email: result.ops[0].email,
-        id: result.insertedId,
+      // Return user details (email and id)
+      res.status(200).json({
+        id: user._id,
+        email: user.email,
       });
     } catch (error) {
-      console.error(`Error in postNew: ${error.message}`);
+      console.error(`Error in getMe: ${error.message}`);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   },
 };
 
-module.exports = UsersController;
+module.exports = UserController;
