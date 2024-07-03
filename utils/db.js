@@ -1,38 +1,57 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
+
+// Retrieve MongoDB connection details from environment variables or use default values
+const HOST = process.env.DB_HOST || 'localhost';
+const PORT = process.env.DB_PORT || 27017;
+const DATABASE = process.env.DB_DATABASE || 'files_manager';
+const url = `mongodb://${HOST}:${PORT}`;
 
 class DBClient {
   constructor() {
-    const host = process.env.DB_HOST || 'localhost';
-    const port = process.env.DB_PORT || 27017;
-    const database = process.env.DB_DATABASE || 'files_manager';
-    const uri = `mongodb://${host}:${port}`;
-
-    this.client = new MongoClient(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    // Create a new MongoClient instance with the specified options
+    this.client = new MongoClient(url, {
+      useUnifiedTopology: true, // Ensure compatibility with MongoDB driver
+      useNewUrlParser: true, // Use new URL string parser
     });
 
+    // Connect to the MongoDB server
     this.client
       .connect()
       .then(() => {
-        this.db = this.client.db(database);
-        console.log('Connected successfully to MongoDB');
+        // Set the database reference once the connection is successful
+        this.db = this.client.db(DATABASE);
       })
-      .catch((error) => {
-        console.error('Error connecting to MongoDB:', error);
+      .catch((err) => {
+        console.log(err);
       });
   }
 
+  /**
+   * Checks if the connection to MongoDB is alive.
+   * @returns {boolean} True if connected, false otherwise.
+   */
   isAlive() {
     return this.client.isConnected();
   }
 
+  /**
+   * Gets the number of documents in the 'users' collection.
+   * @returns {Promise<number>} The number of user documents.
+   */
   async nbUsers() {
-    return this.db.collection('users').countDocuments();
+    const users = this.db.collection('users');
+    const usersNum = await users.countDocuments();
+    return usersNum;
   }
 
+  /**
+   * Gets the number of documents in the 'files' collection.
+   * @returns {Promise<number>} The number of file documents.
+   */
   async nbFiles() {
-    return this.db.collection('files').countDocuments();
+    const files = this.db.collection('files');
+    const filesNum = await files.countDocuments();
+    return filesNum;
   }
 }
 

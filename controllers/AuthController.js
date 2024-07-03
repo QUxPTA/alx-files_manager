@@ -1,68 +1,70 @@
-const { v4: uuidv4 } = require('uuid');
-const crypto = require('crypto');
-const dbClient = require('../utils/db');
-const redisClient = require('../utils/redis');
+import sha1 from 'sha1';
+import { v4 as uuidv4 } from 'uuid';
+import DBClient from '../utils/db';
+import RedisClient from '../utils/redis';
 
-const AuthController = {
-  async getConnect (req, res) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Basic ')) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+class AuthController {
+  /**
+   * Handles the GET /connect endpoint.
+   * Authenticates the user and generates an authentication token.
+   * @param {Object} request - The HTTP request object.
+   * @param {Object} response - The HTTP response object.
+   */
+  static async getConnect(request, response) {
+    // Retrieve the Authorization header
+    const authorization = request.header('Authorization') || null;
+    if (!authorization)
+      return response.status(401).send({ error: 'Unauthorized' });
 
-    const credentials = Buffer.from(
-      authHeader.split(' ')[1],
-      'base64'
-    ).toString('utf-8');
-    const [email, password] = credentials.split(':');
+    // Decode the Base64 encoded email and password
+    const buff = Buffer.from(authorization.replace('Basic ', ''), 'base64');
+    const credentials = {
+      email: buff.toString('utf-8').split(':')[0],
+      password: buff.toString('utf-8').split(':')[1],
+    };
 
-    try {
-      // Find user by email and hashed password (SHA-1)
-      const hashedPassword = crypto
-        .createHash('sha1')
-        .update(password)
-        .digest('hex');
-      const user = await dbClient.db
-        .collection('users')
-        .findOne({ email, password: hashedPassword });
+    // Check if email or password is missing
+    if (!credentials.email || !credentials.password)
+      return response.status(401).send({ error: 'Unauthorized' });
 
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
+    // Hash the password using SHA1
+    credentials.password = sha1(credentials.password);
 
-      // Generate token and store in Redis
-      const token = uuidv4();
-      const key = `auth_${token}`;
-      await redisClient.set(key, user._id.toString(), 86400); // Store for 24 hours (86400 seconds)
+    // Check if the user exists in the database
+    const userExists = await DBClient.db
+      .collection('users')
+      .findOne(credentials);
+    if (!userExists)
+      return response.status(401).send({ error: 'Unauthorized' });
 
-      res.status(200).json({ token });
-    } catch (error) {
-      console.error(`Error in getConnect: ${error.message}`);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  },
+    // Generate a new token and store it in Redis
+    const token = uuidv4();
+    const key = `auth_${token}`;
+    await RedisClient.set(key, userExists._id.toString(), 86400);
 
-  async getDisconnect (req, res) {
-    const token = req.headers['x-token'];
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    try {
-      const key = `auth_${token}`;
-      const userId = await redisClient.get(key);
-
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      await redisClient.del(key);
-      res.status(204).send(); // No content
-    } catch (error) {
-      console.error(`Error in getDisconnect: ${error.message}`);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
+    return response.status(200).send({ token });
   }
-};
+
+  /**
+   * Handles the GET /disconnect endpoint.
+   * Signs out the user by deleting the authentication token from Redis.
+   * @param {Object} request - The HTTP request object.
+   * @param {Object} response - The HTTP response object.
+   */
+  static async getDisconnect(request, response) {
+    // Retrieve the X-Token header
+    const token = request.header('X-Token') || null;
+    if (!token) return response.status(401).send({ error: 'Unauthorized' });
+
+    // Check if the token exists in Redis
+    const redisToken = await RedisClient.get(`auth_${token}`);
+    if (!redisToken)
+      return response.status(401).send({ error: 'Unauthorized' });
+
+    // Delete the token from Redis
+    await RedisClient.del(`auth_${token}`);
+    return response.status(204).send();
+  }
+}
 
 module.exports = AuthController;
