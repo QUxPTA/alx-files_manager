@@ -27,6 +27,19 @@ Enjoy!
 
 | Task | File |
 | ---- | ---- |
+| 0. Redis utils | [redis.js](./utils/redis.js) |
+| 1. MongoDB utils | [utils/db.js](./utils/db.js) |
+| 2. First API | [server.js,](server.js, ), [routes/index.js](./routes/index.js), [controllers/AppController.js](./controllers/AppController.js) |
+| 3. Create a new user | [utils/](./utils), [routes/index.js](./routes/index.js), [controllers/UsersController.js](./controllers/UsersController.js) |
+| 4. Authenticate a user | [utils/](./utils), [routes/index.js](./routes/index.js), [controllers/UsersController.js](./controllers/UsersController.js), [controllers/AuthController.js](./controllers/AuthController.js) |
+| 5. First file | [utils/](./utils), [routes/index.js](./routes/index.js), [controllers/FilesController.js](./controllers/FilesController.js) |
+| 6. Get and list file | [utils/](./utils), [routes/index.js](./routes/index.js), [controllers/FilesController.js](./controllers/FilesController.js) |
+| 7. File publish/unpublish | [utils/](./utils), [routes/index.js](./routes/index.js), [controllers/FilesController.js](./controllers/FilesController.js) |
+| 8. File data | [utils/](./utils), [routes/index.js](./routes/index.js), [controllers/FilesController.js](./controllers/FilesController.js) |
+| 9. Image Thumbnails | [utils/](./utils), [controllers/FilesController.js](./controllers/FilesController.js), [worker.js](./worker.js) |
+| 10. Tests! | [tests/](./tests) |
+| 11. New user - welcome email | [utils/](./utils), [worker.js](./worker.js), [controllers/UsersController.js](./controllers/UsersController.js) |
+
 
 ### 0. Redis utils
 Inside the folder `utils`, create a file `redis.js` that contains the class `RedisClient`.
