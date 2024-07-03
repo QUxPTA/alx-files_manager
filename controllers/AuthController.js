@@ -4,7 +4,7 @@ const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
 const AuthController = {
-  async getConnect(req, res) {
+  async getConnect (req, res) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Basic ')) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -42,7 +42,7 @@ const AuthController = {
     }
   },
 
-  async getDisconnect(req, res) {
+  async getDisconnect (req, res) {
     const token = req.headers['x-token'];
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -62,7 +62,7 @@ const AuthController = {
       console.error(`Error in getDisconnect: ${error.message}`);
       res.status(500).json({ error: 'Internal Server Error' });
     }
-  },
+  }
 };
 
 module.exports = AuthController;

@@ -33,7 +33,7 @@ fileQueue.process(async (job) => {
   const thumbnails = await Promise.all([
     imageThumbnail(fileBuffer, { width: 500 }),
     imageThumbnail(fileBuffer, { width: 250 }),
-    imageThumbnail(fileBuffer, { width: 100 }),
+    imageThumbnail(fileBuffer, { width: 100 })
   ]);
 
   const thumbnailPaths = thumbnails.map((thumbnail, index) => {
