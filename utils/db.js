@@ -7,11 +7,11 @@ const DATABASE = process.env.DB_DATABASE || 'files_manager';
 const url = `mongodb://${HOST}:${PORT}`;
 
 class DBClient {
-  constructor() {
+  constructor () {
     // Create a new MongoClient instance with the specified options
     this.client = new MongoClient(url, {
       useUnifiedTopology: true, // Ensure compatibility with MongoDB driver
-      useNewUrlParser: true, // Use new URL string parser
+      useNewUrlParser: true // Use new URL string parser
     });
 
     // Connect to the MongoDB server
@@ -30,7 +30,7 @@ class DBClient {
    * Checks if the connection to MongoDB is alive.
    * @returns {boolean} True if connected, false otherwise.
    */
-  isAlive() {
+  isAlive () {
     return this.client.isConnected();
   }
 
@@ -38,7 +38,7 @@ class DBClient {
    * Gets the number of documents in the 'users' collection.
    * @returns {Promise<number>} The number of user documents.
    */
-  async nbUsers() {
+  async nbUsers () {
     const users = this.db.collection('users');
     const usersNum = await users.countDocuments();
     return usersNum;
@@ -48,7 +48,7 @@ class DBClient {
    * Gets the number of documents in the 'files' collection.
    * @returns {Promise<number>} The number of file documents.
    */
-  async nbFiles() {
+  async nbFiles () {
     const files = this.db.collection('files');
     const filesNum = await files.countDocuments();
     return filesNum;

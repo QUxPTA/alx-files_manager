@@ -8,11 +8,11 @@ class AppController {
    * @param {Object} request - The HTTP request object.
    * @param {Object} response - The HTTP response object.
    */
-  static getStatus(request, response) {
+  static getStatus (request, response) {
     // Check the connection status of Redis and MongoDB
     const status = {
       redis: RedisClient.isAlive(),
-      db: DBClient.isAlive(),
+      db: DBClient.isAlive()
     };
     return response.status(200).send(status);
   }
@@ -23,10 +23,10 @@ class AppController {
    * @param {Object} request - The HTTP request object.
    * @param {Object} response - The HTTP response object.
    */
-  static async getStats(request, response) {
+  static async getStats (request, response) {
     const stats = {
       users: await DBClient.nbUsers(),
-      files: await DBClient.nbFiles(),
+      files: await DBClient.nbFiles()
     };
     return response.status(200).send(stats);
   }

@@ -10,23 +10,20 @@ class UsersController {
    * Creates a new user in the database.
    * Request body must include 'email' and 'password'.
    */
-  static async postNew(request, response) {
+  static async postNew (request, response) {
     // Get email from request body
     const userEmail = request.body.email;
-    if (!userEmail)
-      return response.status(400).send({ error: 'Missing email' });
+    if (!userEmail) { return response.status(400).send({ error: 'Missing email' }); }
 
     // Get password from request body
     const userPassword = request.body.password;
-    if (!userPassword)
-      return response.status(400).send({ error: 'Missing password' });
+    if (!userPassword) { return response.status(400).send({ error: 'Missing password' }); }
 
     // Check if the user already exists
     const oldUserEmail = await DBClient.db
       .collection('users')
       .findOne({ email: userEmail });
-    if (oldUserEmail)
-      return response.status(400).send({ error: 'Already exist' });
+    if (oldUserEmail) { return response.status(400).send({ error: 'Already exist' }); }
 
     // Hash the password using SHA1
     const shaUserPassword = sha1(userPassword);
@@ -47,15 +44,14 @@ class UsersController {
    * Retrieves the authenticated user's information based on the provided token.
    * Token must be included in the 'X-Token' header.
    */
-  static async getMe(request, response) {
+  static async getMe (request, response) {
     // Get the token from the request header
     const token = request.header('X-Token') || null;
     if (!token) return response.status(401).send({ error: 'Unauthorized' });
 
     // Retrieve the user ID associated with the token from Redis
     const redisToken = await RedisClient.get(`auth_${token}`);
-    if (!redisToken)
-      return response.status(401).send({ error: 'Unauthorized' });
+    if (!redisToken) { return response.status(401).send({ error: 'Unauthorized' }); }
 
     // Find the user in the database by their ID
     const user = await DBClient.db
